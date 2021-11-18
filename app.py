@@ -25,11 +25,11 @@ def order(side, quantity, symbol,order_type=ORDER_TYPE_MARKET):
     return order
 
 # Get USD balance and return 5% of total balance
-def get_usd_balance(account):
+def get_coin_balance(account, coins):
     
-    USD = [coin for coin in account['balances'] if coin['asset'] == 'USD']
-    print(USD)
-    return float(USD[0]['free']) *.05
+    coin = [coin for coin in account['balances'] if coin['asset'] == coins]
+    print(coin)
+    return coin[0]['free']
 
 # Home Page
 @app.route("/")
@@ -44,17 +44,23 @@ def webhook():
     
     side = data['strategy']['order_action'].upper()
     
-    quantity = data['strategy']['order_contracts']
-    
     if data['passphrase'] != config.WEBHOOK_PASSPHRASE:
         return{
             "code": "error",
             "message": "Nice try, invalid passphrase"
         } 
     
-    trade_amout = get_usd_balance(account)
+    if side == 'Buy':
+        
+        trade_amout = (float(get_coin_balance(account, 'USD')) / data['strategy']['order_price']) * .05
     
-    order_responce = order(side, trade_amount , data['ticker'])
+        order_responce = order(side, trade_amount , data['ticker'])
+    
+    else:
+        
+        trade_amount = float(get_coin_balance(account, data['ticker']))
+        
+        order_responce = order(side, trade_amount, data['ticker'])
     
     if order_responce:
         return {
